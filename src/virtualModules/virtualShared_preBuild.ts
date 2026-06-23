@@ -635,6 +635,14 @@ function generateLazyWorkspaceSingletonExports(
       __mfModuleCache.share[${escapeGeneratedStringLiteral(cacheKey)}] = exportModule;
       __mfApplyLazyShareExports(exportModule);`;
 
+  const asyncLoadCode = `initPromise.then(() =>
+        import(${escapeGeneratedStringLiteral(importSource)}).then((mod) => {
+          exportModule = __mfNormalizeShareModule(mod);
+          __mfModuleCache.share[${escapeGeneratedStringLiteral(cacheKey)}] = exportModule;
+          __mfApplyLazyShareExports(exportModule);
+        })
+      )`;
+
   const body = `${declarations}
     const __mfApplyLazyShareExports = (mod) => {
       ${assignments}
@@ -647,13 +655,7 @@ function generateLazyWorkspaceSingletonExports(
           : `if (import.meta.env.SSR) {
         ${applyLocalFallback}
       } else {
-        initPromise.then(() =>
-          import(${escapeGeneratedStringLiteral(importSource)}).then((mod) => {
-            exportModule = __mfNormalizeShareModule(mod);
-            __mfModuleCache.share[${escapeGeneratedStringLiteral(cacheKey)}] = exportModule;
-            __mfApplyLazyShareExports(exportModule);
-          })
-        );
+        (__mfModuleCache.pendingShareLoads ||= []).push(${asyncLoadCode});
       }`
       }
     } else {

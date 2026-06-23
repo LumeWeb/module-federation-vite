@@ -266,7 +266,7 @@ function generateSharedCacheSeedItem(pkg: string, shareItem: ShareItem, importPa
         const mod = await import(${JSON.stringify(importPath)});
         ${normalizeRuntimeShareCode}
         const normalizedModule = __mfNormalizeRuntimeShare(mod);
-        const exportModule = normalizedModule === mod ? {...mod} : normalizedModule;
+        const exportModule = normalizedModule === mod ? mod : normalizedModule;
         Object.defineProperty(exportModule, "__esModule", {
           value: true,
           enumerable: false

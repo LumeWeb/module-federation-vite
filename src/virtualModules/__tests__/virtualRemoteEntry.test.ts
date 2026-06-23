@@ -993,4 +993,36 @@ describe('virtualRemoteEntry', () => {
       code.indexOf('for (const [version, provider] of providerEntries)')
     );
   });
+
+  it('does not spread module namespace when seeding shared cache (preserves live getters)', async () => {
+    normalizedSharedMock.mockReturnValue({
+      react: {
+        name: 'react',
+        from: '',
+        version: '19.2.4',
+        scope: 'default',
+        shareConfig: {
+          singleton: true,
+          requiredVersion: '19.2.4',
+          strictVersion: false,
+        },
+      },
+    });
+    const mod = await import('../virtualRemoteEntry');
+
+    mod.getUsedShares().clear();
+    mod.addUsedShares('react');
+
+    const code = mod.generateDirectSharedCacheSeedCode('build');
+
+    // The generated init() code must NOT use {...mod} spread, which snapshots
+    // getter values at import time. For lazy loadShare modules, getters return
+    // undefined until initPromise resolves. The spread would create a static
+    // copy with undefined values that never update, causing the host to render
+    // with undefined components.
+    //
+    // Instead, the code should use `mod` directly to preserve live getters.
+    expect(code).toContain('const exportModule = normalizedModule === mod ? mod : normalizedModule');
+    expect(code).not.toContain('{...mod}');
+  });
 });
